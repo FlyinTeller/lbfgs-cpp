@@ -53,7 +53,7 @@
         } while (false)
 #else
 // clang-format off
-#error "Unsupported compiler. Please, submit a request to https://github.com/twesterhout/lbfgs-cpp/issues."
+//#error "Unsupported compiler. Please, submit a request to https://github.com/twesterhout/lbfgs-cpp/issues."
 // clang-format on
 #endif
 /// \endcond
@@ -185,7 +185,7 @@ namespace detail {
 /// \brief Terminated the program with a pretty message.
 ///
 /// This function is called whenever an assertion fails.
-[[noreturn]] auto assert_fail(char const* expr, char const* file, unsigned line,
+[[noreturn]] LBFGS_EXPORT auto assert_fail(char const* expr, char const* file, unsigned line,
                               char const* function, char const* msg) noexcept
     -> void;
 } // namespace detail

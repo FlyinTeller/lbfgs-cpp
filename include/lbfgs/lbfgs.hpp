@@ -133,7 +133,7 @@ struct lbfgs_result_t {
 
 struct lbfgs_buffers_t;
 
-auto thread_local_state(lbfgs_param_t const&   params,
+LBFGS_EXPORT auto thread_local_state(lbfgs_param_t const&   params,
                         gsl::span<float const> x0) noexcept -> lbfgs_buffers_t*;
 
 template <class Function>
@@ -141,14 +141,14 @@ auto minimize(Function value_and_gradient, lbfgs_param_t const& params,
               gsl::span<float> x) -> lbfgs_result_t;
 
 namespace detail {
-auto dot(gsl::span<float const> a, gsl::span<float const> b) noexcept -> double;
-auto nrm2(gsl::span<float const> x) noexcept -> double;
-auto axpy(float a, gsl::span<float const> x, gsl::span<float> y) noexcept
+LBFGS_EXPORT auto dot(gsl::span<float const> a, gsl::span<float const> b) noexcept -> double;
+LBFGS_EXPORT auto nrm2(gsl::span<float const> x) noexcept -> double;
+LBFGS_EXPORT auto axpy(float a, gsl::span<float const> x, gsl::span<float> y) noexcept
     -> void;
-auto axpy(float a, gsl::span<float const> x, gsl::span<float const> y,
+LBFGS_EXPORT auto axpy(float a, gsl::span<float const> x, gsl::span<float const> y,
           gsl::span<float> out) noexcept -> void;
-auto scal(float a, gsl::span<float> x) noexcept -> void;
-auto negative_copy(gsl::span<float const> src, gsl::span<float> dst) noexcept
+LBFGS_EXPORT auto scal(float a, gsl::span<float> x) noexcept -> void;
+LBFGS_EXPORT auto negative_copy(gsl::span<float const> src, gsl::span<float> dst) noexcept
     -> void;
 
 /// Checks \p p for validity.
@@ -220,7 +220,7 @@ class iteration_history_t {
     constexpr auto operator     =(iteration_history_t&&) noexcept
         -> iteration_history_t& = default;
 
-    auto emplace_back(gsl::span<float const> x, gsl::span<float const> x_prev,
+	LBFGS_EXPORT auto emplace_back(gsl::span<float const> x, gsl::span<float const> x_prev,
                       gsl::span<float const> g,
                       gsl::span<float const> g_prev) noexcept -> double;
 
@@ -435,17 +435,17 @@ struct lbfgs_buffers_t {
     inline auto impl() noexcept -> impl_t&;
 
   public:
-    lbfgs_buffers_t() noexcept;
-    lbfgs_buffers_t(size_t n, size_t m, size_t past);
+	  LBFGS_EXPORT lbfgs_buffers_t() noexcept;
+	  LBFGS_EXPORT lbfgs_buffers_t(size_t n, size_t m, size_t past);
 
-    lbfgs_buffers_t(lbfgs_buffers_t const&) = delete;
-    lbfgs_buffers_t(lbfgs_buffers_t&&) noexcept;
-    auto operator=(lbfgs_buffers_t const&) -> lbfgs_buffers_t& = delete;
-    auto operator=(lbfgs_buffers_t&&) noexcept -> lbfgs_buffers_t&;
-    ~lbfgs_buffers_t() noexcept;
+	LBFGS_EXPORT lbfgs_buffers_t(lbfgs_buffers_t const&) = delete;
+	LBFGS_EXPORT lbfgs_buffers_t(lbfgs_buffers_t&&) noexcept;
+	LBFGS_EXPORT auto operator=(lbfgs_buffers_t const&) -> lbfgs_buffers_t& = delete;
+	LBFGS_EXPORT auto operator=(lbfgs_buffers_t&&) noexcept -> lbfgs_buffers_t&;
+	LBFGS_EXPORT ~lbfgs_buffers_t() noexcept;
 
-    auto resize(size_t n, size_t m, size_t past) -> void;
-    auto make_state() noexcept -> detail::lbfgs_state_t;
+	LBFGS_EXPORT auto resize(size_t n, size_t m, size_t past) -> void;
+	LBFGS_EXPORT auto make_state() noexcept -> detail::lbfgs_state_t;
 };
 
 #if 0
@@ -463,7 +463,7 @@ inline auto print_span(char const* prefix, gsl::span<float const> xs) -> void
 #endif
 
 namespace detail {
-auto apply_inverse_hessian(iteration_history_t& history, double gamma,
+	LBFGS_EXPORT auto apply_inverse_hessian(iteration_history_t& history, double gamma,
                            gsl::span<float> q) -> void;
 
 struct line_search_runner_fn {
@@ -709,7 +709,7 @@ auto minimize(Function value_and_gradient, lbfgs_param_t const& params,
 }
 
 /// #status_t can be used with `std::error_code`.
-auto make_error_code(status_t) noexcept -> std::error_code;
+LBFGS_EXPORT auto make_error_code(status_t) noexcept -> std::error_code;
 
 LBFGS_NAMESPACE_END
 
@@ -730,21 +730,9 @@ namespace gsl {
 #    pragma clang diagnostic push
 #    pragma clang diagnostic ignored "-Wmissing-noreturn"
 #endif
-constexpr auto fail_fast_assert_handler(char const* expr, char const* msg,
-                                        char const* file, int const line)
-    -> void
-{
-    // This is a dummy if which will always evaluate to true. We need it since
-    // fail_fast_assert_handler in gsl-lite is marked constexpr and out
-    // assert_fail is not.
-    if (line != -2147483648) {
-        ::LBFGS_NAMESPACE::detail::assert_fail(
-            expr, file, static_cast<unsigned>(line), "", msg);
-    }
-    // This call is needed, because we mark the function [[noreturn]] and the
-    // compilers don't know that line numbers can't be negative.
-    std::abort();
-}
+	auto fail_fast_assert_handler(char const* expr, char const* msg,
+		char const* file, int const line)
+		-> void;
 #if defined(LBFGS_CLANG)
 #    pragma clang diagnostic pop
 #endif

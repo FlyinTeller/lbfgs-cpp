@@ -39,7 +39,7 @@ LBFGS_NAMESPACE_BEGIN
 // ============================= Error codes =============================== {{{
 namespace { // anonymous namespace
 struct lbfgs_error_category : public std::error_category {
-    constexpr lbfgs_error_category() noexcept = default;
+    lbfgs_error_category() noexcept = default;
 
     lbfgs_error_category(lbfgs_error_category const&) = delete;
     lbfgs_error_category(lbfgs_error_category&&)      = delete;
@@ -728,7 +728,7 @@ struct lbfgs_buffers_t::impl_t {
         template <class T> auto operator()(T* p) const noexcept
         {
             // NOLINTNEXTLINE(cppcoreguidelines-owning-memory, cppcoreguidelines-no-malloc, hicpp-no-malloc)
-            std::free(p);
+            _aligned_free(p);
         }
     };
 
@@ -802,7 +802,7 @@ struct lbfgs_buffers_t::impl_t {
         }
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast, cppcoreguidelines-owning-memory)
         auto* p = reinterpret_cast<float*>(
-            std::aligned_alloc(cache_line_size, size * sizeof(float)));
+            _aligned_malloc(size * sizeof(float), cache_line_size));
         if (p == nullptr) { throw std::bad_alloc{}; }
         // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays, hicpp-avoid-c-arrays, modernize-avoid-c-arrays)
         return std::unique_ptr<float[], Deleter>{p};
@@ -847,7 +847,7 @@ auto lbfgs_buffers_t::impl() noexcept -> impl_t&
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init, hicpp-member-init)
 LBFGS_EXPORT lbfgs_buffers_t::lbfgs_buffers_t() noexcept
 {
-    static_assert(sizeof(impl_t) <= sizeof(storage_type));
+    //static_assert(sizeof(impl_t) <= sizeof(storage_type));
     static_assert(alignof(impl_t) <= alignof(storage_type));
     new (&_storage) impl_t{};
 }
@@ -856,7 +856,7 @@ LBFGS_EXPORT lbfgs_buffers_t::lbfgs_buffers_t() noexcept
 LBFGS_EXPORT lbfgs_buffers_t::lbfgs_buffers_t(size_t const n, size_t const m,
                                               size_t const past)
 {
-    static_assert(sizeof(impl_t) <= sizeof(storage_type));
+    //static_assert(sizeof(impl_t) <= sizeof(storage_type));
     static_assert(alignof(impl_t) <= alignof(storage_type));
     new (&_storage) impl_t{n, m, past};
 }
@@ -1212,3 +1212,20 @@ LBFGS_EXPORT auto apply_inverse_hessian(iteration_history_t&   history,
 } // namespace detail
 
 LBFGS_NAMESPACE_END
+namespace gsl {
+	auto fail_fast_assert_handler(char const* expr, char const* msg,
+		char const* file, int const line)
+		-> void
+	{
+		// This is a dummy if which will always evaluate to true. We need it since
+		// fail_fast_assert_handler in gsl-lite is marked constexpr and out
+		// assert_fail is not.
+		if (line != -2147483648) {
+			::LBFGS_NAMESPACE::detail::assert_fail(
+				expr, file, static_cast<unsigned>(line), "", msg);
+		}
+		// This call is needed, because we mark the function [[noreturn]] and the
+		// compilers don't know that line numbers can't be negative.
+		std::abort();
+	}
+}

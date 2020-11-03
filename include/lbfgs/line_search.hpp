@@ -315,7 +315,7 @@ check_parameters(ls_param_t const& p) noexcept -> status_t
 
 // ========================= Some data structures ========================== }}}
 
-auto update_trial_value_and_interval(ls_state_t& state) noexcept -> void;
+LBFGS_EXPORT auto update_trial_value_and_interval(ls_state_t& state) noexcept -> void;
 
 /// Using Maple
 ///
